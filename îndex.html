@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PickIt Ultimate | L'outil de décision ultime</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#6366f1',
+                        secondary: '#a855f7',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            transition: background 0.3s ease;
+        }
+
+        .glass { 
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .dark .glass {
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        .float-anim { animation: float 3s ease-in-out infinite; }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 min-h-screen text-slate-900 dark:text-slate-100 transition-colors duration-300">
+
+    <!-- Navigation / Toolbar -->
+    <nav class="fixed top-0 w-full z-40 p-4 flex justify-between items-center pointer-events-none">
+        <div class="pointer-events-auto flex gap-2">
+            <button onclick="toggleDarkMode()" class="w-10 h-10 glass rounded-xl flex items-center justify-center hover:scale-110 transition-transform">
+                <i id="themeIcon" class="fas fa-moon text-indigo-500"></i>
+            </button>
+            <button onclick="toggleSound()" class="w-10 h-10 glass rounded-xl flex items-center justify-center hover:scale-110 transition-transform">
+                <i id="soundIcon" class="fas fa-volume-up text-indigo-500"></i>
+            </button>
+        </div>
+        <div class="pointer-events-auto flex gap-2">
+            <button onclick="shareLink()" class="px-4 h-10 glass rounded-xl flex items-center gap-2 hover:scale-105 transition-all text-sm font-bold">
+                <i class="fas fa-share-nodes text-indigo-500"></i> PARTAGER
+            </button>
+        </div>
+    </nav>
+
+    <main class="container mx-auto max-w-6xl pt-20 pb-12 px-4 flex flex-col md:grid md:grid-cols-12 gap-6 h-full">
+        
+        <!-- Colonne Gauche : Historique -->
+        <aside class="md:col-span-3 order-3 md:order-1">
+            <div class="glass rounded-3xl p-6 sticky top-24 shadow-xl">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-800 text-sm uppercase tracking-widest flex items-center gap-2">
+                        <i class="fas fa-crown text-amber-500"></i> Historique
+                    </h3>
+                    <button onclick="clearHistory()" class="text-[10px] text-slate-400 hover:text-red-500 font-bold">VIDER</button>
+                </div>
+                <div id="historyList" class="space-y-3 max-h-[60vh] overflow-y-auto scrollbar-hide">
+                    <!-- Historique ici -->
+                </div>
+            </div>
+        </aside>
+
+        <!-- Colonne Centre : App Principale -->
+        <section class="md:col-span-6 order-1 md:order-2">
+            <div class="glass rounded-[2.5rem] p-8 md:p-10 shadow-2xl relative overflow-hidden border-indigo-500/20 border-2">
+                
+                <header class="text-center mb-8">
+                    <div class="inline-block p-4 bg-white dark:bg-slate-800 rounded-3xl shadow-lg mb-4 float-anim">
+                        <span class="text-4xl">🎲</span>
+                    </div>
+                    <h1 class="text-4xl font-900 bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-purple-500 tracking-tighter">
+                        PickIt Ultimate
+                    </h1>
+                </header>
+
+                <!-- Input Zone -->
+                <div class="space-y-4 mb-8">
+                    <div class="relative">
+                        <input type="text" id="optionInput" 
+                            class="w-full pl-6 pr-16 py-4 bg-white dark:bg-slate-800 border-2 border-transparent focus:border-indigo-500 rounded-2xl shadow-sm outline-none transition-all text-lg font-semibold"
+                            placeholder="Écris un choix...">
+                        <button onclick="addOption()" 
+                            class="absolute right-2 top-2 bottom-2 aspect-square bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl transition-all active:scale-90 flex items-center justify-center">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="openBulkModal()" class="flex-1 py-2 rounded-xl text-xs font-bold bg-slate-200 dark:bg-slate-700 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition-colors">
+                            <i class="fas fa-list-ul mr-2"></i> AJOUT GROUPÉ
+                        </button>
+                        <button onclick="clearAll()" id="clearBtn" class="flex-1 py-2 rounded-xl text-xs font-bold bg-slate-200 dark:bg-slate-700 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-500 transition-colors hidden">
+                            <i class="fas fa-trash-alt mr-2"></i> TOUT EFFACER
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Liste -->
+                <div class="mb-8">
+                    <div id="optionsList" class="flex flex-wrap gap-2 max-h-64 overflow-y-auto pr-2 scrollbar-hide">
+                        <!-- Tags ici -->
+                    </div>
+                    <div id="emptyState" class="text-center py-12 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-3xl">
+                        <p class="text-slate-400 font-medium">Ajoute au moins deux choix pour commencer.</p>
+                    </div>
+                </div>
+
+                <!-- Action -->
+                <button onclick="startDrawing()" id="drawBtn" 
+                    class="hidden w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:shadow-indigo-500/40 hover:shadow-2xl text-white font-900 py-6 rounded-3xl shadow-xl transition-all active:scale-95 flex items-center justify-center gap-4 text-xl">
+                    <i class="fas fa-bolt"></i> TIRER AU SORT
+                </button>
+            </div>
+        </section>
+
+        <!-- Colonne Droite : Stats / Tips (Desktop) -->
+        <aside class="md:col-span-3 order-2 md:order-3">
+            <div class="glass rounded-3xl p-6 shadow-xl space-y-6">
+                <div>
+                    <h4 class="text-xs font-bold text-indigo-500 uppercase mb-2">Statistiques</h4>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="bg-white/50 dark:bg-slate-800/50 p-3 rounded-2xl text-center">
+                            <span id="statCount" class="block text-xl font-800">0</span>
+                            <span class="text-[10px] text-slate-400 uppercase">Choix</span>
+                        </div>
+                        <div class="bg-white/50 dark:bg-slate-800/50 p-3 rounded-2xl text-center">
+                            <span id="statDraws" class="block text-xl font-800">0</span>
+                            <span class="text-[10px] text-slate-400 uppercase">Tirages</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-4 bg-indigo-500/10 rounded-2xl border border-indigo-500/20">
+                    <p class="text-xs leading-relaxed text-indigo-600 dark:text-indigo-400">
+                        <i class="fas fa-lightbulb mr-1"></i> <strong>Astuce :</strong> Partage l'URL pour envoyer tes choix à tes amis !
+                    </p>
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <!-- Modal : Résultat -->
+    <div id="resultModal" class="hidden fixed inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center z-50 p-6">
+        <div class="bg-white dark:bg-slate-900 rounded-[3.5rem] p-10 max-w-md w-full text-center shadow-2xl relative border-4 border-indigo-500">
+            <div id="shufflingOverlay" class="hidden absolute inset-0 flex items-center justify-center bg-inherit rounded-[3.5rem] z-10">
+                <div id="shuffleText" class="text-3xl font-900 text-indigo-500 animate-pulse">...</div>
+            </div>
+
+            <div class="mb-6">
+                <span class="text-7xl">✨</span>
+            </div>
+            <h2 class="text-slate-400 font-bold uppercase tracking-widest text-xs mb-2">Le gagnant est</h2>
+            <div id="winnerName" class="text-5xl font-900 text-slate-900 dark:text-white mb-10 break-words"></div>
+            
+            <div class="flex flex-col gap-3">
+                <button onclick="closeModal()" class="w-full bg-indigo-600 text-white py-5 rounded-2xl font-800 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/30">
+                    CONTINUER
+                </button>
+                <button onclick="reDraw()" class="text-slate-400 hover:text-indigo-500 font-bold text-sm uppercase tracking-widest">
+                    <i class="fas fa-redo mr-2"></i> Re-tirer
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal : Bulk Add -->
+    <div id="bulkModal" class="hidden fixed inset-0 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center z-50 p-6">
+        <div class="glass rounded-3xl p-8 max-w-lg w-full shadow-2xl">
+            <h3 class="text-xl font-800 mb-4">Ajout groupé</h3>
+            <p class="text-sm text-slate-500 mb-4">Colle ta liste ici (un choix par ligne).</p>
+            <textarea id="bulkTextarea" rows="8" class="w-full p-4 rounded-2xl bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 focus:border-indigo-500 outline-none mb-4 resize-none"></textarea>
+            <div class="flex gap-3">
+                <button onclick="closeBulkModal()" class="flex-1 py-3 font-bold text-slate-400">ANNULER</button>
+                <button onclick="processBulkAdd()" class="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-bold">AJOUTER</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- State ---
+        let options = [];
+        let history = JSON.parse(localStorage.getItem('pickit-history')) || [];
+        let totalDraws = parseInt(localStorage.getItem('pickit-draw-count')) || 0;
+        let isDarkMode = localStorage.getItem('pickit-theme') === 'dark';
+        let isSoundEnabled = localStorage.getItem('pickit-sound') !== 'false';
+
+        // --- Elements ---
+        const input = document.getElementById('optionInput');
+        const listContainer = document.getElementById('optionsList');
+        const drawBtn = document.getElementById('drawBtn');
+        const emptyState = document.getElementById('emptyState');
+        const countDisplay = document.getElementById('statCount');
+        const drawsDisplay = document.getElementById('statDraws');
+        const historyList = document.getElementById('historyList');
+        const clearBtn = document.getElementById('clearBtn');
+
+        // --- Init ---
+        function init() {
+            // Charger les options depuis l'URL si présentes
+            const params = new URLSearchParams(window.location.search);
+            const encoded = params.get('q');
+            if (encoded) {
+                try {
+                    options = JSON.parse(atob(encoded));
+                } catch(e) { console.error("URL invalide"); }
+            } else {
+                options = JSON.parse(localStorage.getItem('pickit-choices')) || [];
+            }
+
+            // Appliquer le thème
+            if (isDarkMode) document.documentElement.classList.add('dark');
+            updateSoundIcon();
+            updateThemeIcon();
+            
+            renderOptions();
+            updateHistoryUI();
+            drawsDisplay.textContent = totalDraws;
+        }
+
+        // --- Logic ---
+        function addOption() {
+            const val = input.value.trim();
+            if (val && !options.includes(val)) {
+                options.push(val);
+                input.value = "";
+                playSound('click');
+                updateAll();
+            }
+        }
+
+        function removeOption(index) {
+            options.splice(index, 1);
+            updateAll();
+        }
+
+        function updateAll() {
+            save();
+            renderOptions();
+        }
+
+        function save() {
+            localStorage.setItem('pickit-choices', JSON.stringify(options));
+            countDisplay.textContent = options.length;
+        }
+
+        function renderOptions() {
+            listContainer.innerHTML = "";
+            if (options.length === 0) {
+                emptyState.classList.remove('hidden');
+                drawBtn.classList.add('hidden');
+                clearBtn.classList.add('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+                drawBtn.classList.remove('hidden');
+                clearBtn.classList.remove('hidden');
+                options.forEach((opt, index) => {
+                    const tag = document.createElement('div');
+                    tag.className = "flex items-center gap-2 bg-white dark:bg-slate-800 px-4 py-2 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 animate-in fade-in slide-in-from-bottom-2 duration-300";
+                    tag.innerHTML = `
+                        <span contenteditable="true" onblur="editOption(${index}, this.textContent)" class="outline-none focus:text-indigo-500 font-semibold text-sm">${opt}</span>
+                        <button onclick="removeOption(${index})" class="text-slate-300 hover:text-red-500 transition-colors"><i class="fas fa-times"></i></button>
+                    `;
+                    listContainer.appendChild(tag);
+                });
+            }
+            countDisplay.textContent = options.length;
+        }
+
+        function editOption(index, newText) {
+            const txt = newText.trim();
+            if (txt) options[index] = txt;
+            else removeOption(index);
+            updateAll();
+        }
+
+        // --- Actions ---
+        function startDrawing() {
+            if (options.length < 1) return;
+            
+            const modal = document.getElementById('resultModal');
+            const overlay = document.getElementById('shufflingOverlay');
+            const shuffleText = document.getElementById('shuffleText');
+            
+            modal.classList.remove('hidden');
+            overlay.classList.remove('hidden');
+            playSound('roll');
+
+            let steps = 0;
+            const maxSteps = 20;
+            const interval = setInterval(() => {
+                shuffleText.textContent = options[Math.floor(Math.random() * options.length)];
+                steps++;
+                if (steps >= maxSteps) {
+                    clearInterval(interval);
+                    overlay.classList.add('hidden');
+                    const winner = options[Math.floor(Math.random() * options.length)];
+                    finalizeWin(winner);
+                }
+            }, 80);
+        }
+
+        function finalizeWin(winner) {
+            document.getElementById('winnerName').textContent = winner;
+            totalDraws++;
+            localStorage.setItem('pickit-draw-count', totalDraws);
+            drawsDisplay.textContent = totalDraws;
+            
+            playSound('win');
+            confetti({
+                particleCount: 200,
+                spread: 80,
+                origin: { y: 0.7 },
+                colors: ['#6366f1', '#a855f7', '#ffffff']
+            });
+
+            history.unshift({name: winner, date: new Date().toLocaleTimeString()});
+            if(history.length > 20) history.pop();
+            localStorage.setItem('pickit-history', JSON.stringify(history));
+            updateHistoryUI();
+        }
+
+        // --- UI Utils ---
+        function updateHistoryUI() {
+            historyList.innerHTML = history.length ? history.map(h => `
+                <div class="bg-white/40 dark:bg-slate-800/40 p-3 rounded-2xl flex justify-between items-center border border-white/10">
+                    <span class="font-bold text-sm truncate pr-2">${h.name}</span>
+                    <span class="text-[9px] text-slate-400 shrink-0 uppercase">${h.date}</span>
+                </div>
+            `).join('') : '<p class="text-center text-xs text-slate-400 py-4 italic">Aucun gagnant</p>';
+        }
+
+        function clearHistory() {
+            history = [];
+            localStorage.removeItem('pickit-history');
+            updateHistoryUI();
+        }
+
+        function clearAll() {
+            if (confirm("Tout supprimer ?")) {
+                options = [];
+                updateAll();
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('resultModal').classList.add('hidden');
+        }
+
+        function reDraw() {
+            closeModal();
+            setTimeout(startDrawing, 200);
+        }
+
+        // --- Bulk ---
+        function openBulkModal() { document.getElementById('bulkModal').classList.remove('hidden'); }
+        function closeBulkModal() { document.getElementById('bulkModal').classList.add('hidden'); }
+        function processBulkAdd() {
+            const text = document.getElementById('bulkTextarea').value;
+            const newItems = text.split('\n').map(s => s.trim()).filter(s => s !== "");
+            options = [...new Set([...options, ...newItems])];
+            updateAll();
+            closeBulkModal();
+            document.getElementById('bulkTextarea').value = "";
+        }
+
+        // --- Dark Mode ---
+        function toggleDarkMode() {
+            isDarkMode = !isDarkMode;
+            document.documentElement.classList.toggle('dark');
+            localStorage.setItem('pickit-theme', isDarkMode ? 'dark' : 'light');
+            updateThemeIcon();
+        }
+        function updateThemeIcon() {
+            document.getElementById('themeIcon').className = isDarkMode ? 'fas fa-sun text-amber-400' : 'fas fa-moon text-indigo-500';
+        }
+
+        // --- Sharing ---
+        function shareLink() {
+            const encoded = btoa(JSON.stringify(options));
+            const url = window.location.origin + window.location.pathname + '?q=' + encoded;
+            
+            // Clipboard copy
+            const dummy = document.createElement('input');
+            document.body.appendChild(dummy);
+            dummy.value = url;
+            dummy.select();
+            document.execCommand('copy');
+            document.body.removeChild(dummy);
+            
+            alert("Lien de partage copié dans le presse-papier !");
+        }
+
+        // --- Audio ---
+        function toggleSound() {
+            isSoundEnabled = !isSoundEnabled;
+            localStorage.setItem('pickit-sound', isSoundEnabled);
+            updateSoundIcon();
+        }
+        function updateSoundIcon() {
+            document.getElementById('soundIcon').className = isSoundEnabled ? 'fas fa-volume-up text-indigo-500' : 'fas fa-volume-mute text-slate-400';
+        }
+        function playSound(type) {
+            if (!isSoundEnabled) return;
+            const context = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = context.createOscillator();
+            const gain = context.createGain();
+            
+            osc.connect(gain);
+            gain.connect(context.destination);
+            
+            const now = context.currentTime;
+
+            if (type === 'click') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, now);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                osc.start(); osc.stop(now + 0.1);
+            } else if (type === 'win') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(400, now);
+                osc.frequency.exponentialRampToValueAtTime(800, now + 0.2);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                osc.start(); osc.stop(now + 0.5);
+            } else if (type === 'roll') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(100, now);
+                gain.gain.setValueAtTime(0.05, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 1.5);
+                osc.start(); osc.stop(now + 1.5);
+            }
+        }
+
+        // --- Init Call ---
+        init();
+
+        // Keyboard support
+        input.addEventListener('keypress', (e) => { if (e.key === 'Enter') addOption(); });
+
+    </script>
+</body>
+</html>
