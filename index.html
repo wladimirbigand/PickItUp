@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PickIt</title>
+    <title>PickItUp | Pure & Solid</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -13,476 +13,415 @@
             theme: {
                 extend: {
                     colors: {
-                        apex: {
-                            primary: '#6366f1',
-                            secondary: '#8b5cf6',
-                            accent: '#d946ef',
-                            dark: '#0f172a'
+                        neutral: {
+                            950: '#0a0a0a',
                         }
                     },
-                    borderRadius: {
-                        '4xl': '2rem',
-                        '5xl': '3rem',
+                    boxShadow: {
+                        'soft': '0 2px 8px rgba(0, 0, 0, 0.05)',
+                        'depth': '0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.08)',
+                        'inner-solid': 'inset 0 2px 5px rgba(0, 0, 0, 0.08)',
                     }
                 }
             }
         }
     </script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
         
         body { 
-            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-family: 'Plus Jakarta Sans', sans-serif; 
             -webkit-tap-highlight-color: transparent;
+            scroll-behavior: smooth;
         }
 
-        .glass { 
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
+        .ui-element {
+            @apply transition-all duration-200 ease-in-out;
         }
 
-        .dark .glass {
-            background: rgba(15, 23, 42, 0.6);
-            border: 1px solid rgba(255, 255, 255, 0.05);
+        /* Cartes avec relief marqué et arrondis serrés (8px) */
+        .minimal-card {
+            @apply bg-slate-100 dark:bg-neutral-900 border border-slate-300 dark:border-white/10 rounded-lg shadow-sm;
         }
 
-        .bento-card {
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        /* Zones creuses */
+        .inset-area {
+            @apply bg-slate-200/60 dark:bg-black/40 border border-slate-300/50 dark:border-white/5 rounded-md;
         }
 
-        .bento-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        /* Boutons d'action unifiés */
+        .action-btn {
+            @apply flex-shrink-0 px-5 py-3 bg-white dark:bg-neutral-800 text-slate-900 dark:text-white rounded-md font-800 text-[10px] uppercase tracking-widest border border-slate-300 dark:border-white/10 hover:bg-slate-50 active:bg-slate-200 ui-element shadow-sm;
         }
 
-        .wheel-glow {
-            filter: drop-shadow(0 0 30px rgba(99, 102, 241, 0.2));
+        #wheelContainer {
+            filter: drop-shadow(0 15px 35px rgba(0,0,0,0.15));
+        }
+
+        .dark #wheelContainer {
+            filter: drop-shadow(0 15px 35px rgba(0,0,0,0.5));
+        }
+
+        .pointer-hit {
+            animation: hit 0.1s ease-out;
+        }
+
+        @keyframes hit {
+            0% { transform: translateX(-50%) rotate(0deg); }
+            50% { transform: translateX(-50%) rotate(-10deg); }
+            100% { transform: translateX(-50%) rotate(0deg); }
         }
 
         .scrollbar-hide::-webkit-scrollbar { display: none; }
-        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-
-        .ai-loading-gradient {
-            background: linear-gradient(90deg, #6366f1, #d946ef, #6366f1);
-            background-size: 200% 100%;
-            animation: ai-flow 2s linear infinite;
-        }
-
-        @keyframes ai-flow {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-        }
-
-        .template-card {
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        .template-card:hover {
-            transform: scale(1.05);
-            background: rgba(99, 102, 241, 0.1);
-        }
-
-        #toast {
-            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            transform: translateY(100px);
-            opacity: 0;
-        }
-        #toast.show {
-            transform: translateY(0);
-            opacity: 1;
+        
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
         }
     </style>
 </head>
-<body class="bg-[#f8fafc] dark:bg-apex-dark min-h-screen text-slate-900 dark:text-slate-100 transition-colors duration-500 overflow-x-hidden">
+<body class="bg-[#dcdcdc] dark:bg-neutral-950 text-slate-900 dark:text-slate-100 min-h-screen transition-colors duration-500 pb-12">
 
-    <div class="fixed inset-0 pointer-events-none -z-10">
-        <div class="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-indigo-500/10 rounded-full blur-[120px] animate-pulse"></div>
-        <div class="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-fuchsia-500/10 rounded-full blur-[120px] animate-pulse" style="animation-delay: 1.5s"></div>
-    </div>
-
-    <!-- Modals System -->
-    <!-- Start/Template Overlay -->
-    <div id="startOverlay" class="hidden fixed inset-0 z-[200] flex items-center justify-center p-6 bg-slate-950/40 backdrop-blur-xl">
-        <div class="max-w-4xl w-full glass dark:bg-slate-900 rounded-5xl p-8 lg:p-12 text-center border-2 border-white dark:border-slate-800 shadow-2xl overflow-y-auto max-h-[90vh] scrollbar-hide">
-            <h2 class="text-4xl font-900 mb-2 tracking-tighter">Que voulez-vous décider ?</h2>
-            <p class="text-slate-500 mb-10">Choisissez une catégorie pour commencer instantanément.</p>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
-                <div onclick="applyTemplate('games')" class="template-card glass p-6 rounded-3xl flex flex-col items-center gap-4 text-slate-900 dark:text-white">
-                    <span class="text-4xl">🎮</span>
-                    <span class="font-bold text-sm">Jeux Vidéo</span>
-                </div>
-                <div onclick="applyTemplate('food')" class="template-card glass p-6 rounded-3xl flex flex-col items-center gap-4 text-slate-900 dark:text-white">
-                    <span class="text-4xl">🍕</span>
-                    <span class="font-bold text-sm">Plats</span>
-                </div>
-                <div onclick="applyTemplate('movies')" class="template-card glass p-6 rounded-3xl flex flex-col items-center gap-4 text-slate-900 dark:text-white">
-                    <span class="text-4xl">🍿</span>
-                    <span class="font-bold text-sm">Films</span>
-                </div>
-                <div onclick="applyTemplate('activities')" class="template-card glass p-6 rounded-3xl flex flex-col items-center gap-4 text-slate-900 dark:text-white">
-                    <span class="text-4xl">🏃</span>
-                    <span class="font-bold text-sm">Activités</span>
-                </div>
+    <!-- Thèmes / Start Overlay -->
+    <div id="startOverlay" class="hidden fixed inset-0 z-[200] flex items-center justify-center p-6 bg-slate-300/90 dark:bg-black/90 backdrop-blur-sm">
+        <div class="max-w-3xl w-full text-center">
+            <h2 class="text-4xl font-800 mb-2 tracking-tighter">Univers de départ</h2>
+            <p class="text-slate-600 dark:text-slate-400 mb-12 text-sm font-medium">Choisissez un thème pour initialiser la roue.</p>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12">
+                <button onclick="applyTemplate('games')" class="minimal-card bg-white dark:bg-neutral-800 p-8 hover:bg-slate-50 dark:hover:bg-neutral-700 ui-element group border-b-4 border-slate-300 dark:border-white/5 active:translate-y-1 active:border-b-0">
+                    <span class="text-4xl block mb-4 group-hover:scale-110 ui-element">🎮</span>
+                    <span class="text-[10px] font-bold uppercase tracking-widest opacity-60">Jeux</span>
+                </button>
+                <button onclick="applyTemplate('food')" class="minimal-card bg-white dark:bg-neutral-800 p-8 hover:bg-slate-50 dark:hover:bg-neutral-700 ui-element group border-b-4 border-slate-300 dark:border-white/5 active:translate-y-1 active:border-b-0">
+                    <span class="text-4xl block mb-4 group-hover:scale-110 ui-element">🍕</span>
+                    <span class="text-[10px] font-bold uppercase tracking-widest opacity-60">Cuisine</span>
+                </button>
+                <button onclick="applyTemplate('movies')" class="minimal-card bg-white dark:bg-neutral-800 p-8 hover:bg-slate-50 dark:hover:bg-neutral-700 ui-element group border-b-4 border-slate-300 dark:border-white/5 active:translate-y-1 active:border-b-0">
+                    <span class="text-4xl block mb-4 group-hover:scale-110 ui-element">🍿</span>
+                    <span class="text-[10px] font-bold uppercase tracking-widest opacity-60">Films</span>
+                </button>
+                <button onclick="applyTemplate('activities')" class="minimal-card bg-white dark:bg-neutral-800 p-8 hover:bg-slate-50 dark:hover:bg-neutral-700 ui-element group border-b-4 border-slate-300 dark:border-white/5 active:translate-y-1 active:border-b-0">
+                    <span class="text-4xl block mb-4 group-hover:scale-110 ui-element">🏃</span>
+                    <span class="text-[10px] font-bold uppercase tracking-widest opacity-60">Loisirs</span>
+                </button>
             </div>
-            <div class="flex flex-col items-center gap-4">
-                <button onclick="closeStartOverlay()" class="text-slate-400 font-bold hover:text-indigo-500 transition-colors">Passer et créer manuellement</button>
-            </div>
+            <button onclick="closeStartOverlay()" class="bg-white dark:bg-neutral-800 border border-slate-400 dark:border-white/10 px-8 py-3 rounded-md text-[10px] font-black uppercase tracking-widest transition-colors hover:bg-slate-100">Passer l'introduction</button>
         </div>
     </div>
 
-    <!-- Create Wheel Modal -->
-    <div id="createWheelModal" class="hidden fixed inset-0 z-[210] flex items-center justify-center p-6 bg-slate-950/40 backdrop-blur-md">
-        <div class="max-w-md w-full glass dark:bg-slate-900 rounded-4xl p-8 shadow-2xl border-2 border-white dark:border-slate-800">
-            <h3 class="text-2xl font-800 mb-2">Nouvelle liste</h3>
-            <p class="text-slate-500 text-sm mb-6">Donnez un nom à votre nouvelle roue de choix.</p>
-            <input type="text" id="newWheelNameInput" 
-                class="w-full px-6 py-4 bg-white dark:bg-slate-800 border-2 border-transparent focus:border-indigo-500 rounded-2xl outline-none mb-6 font-bold" 
-                placeholder="Ex: Soirée Ciné, Restos...">
+    <!-- Modal de création de roue -->
+    <div id="createWheelModal" class="hidden fixed inset-0 z-[210] flex items-center justify-center p-6 bg-black/20 dark:bg-black/60 backdrop-blur-sm">
+        <div class="max-w-sm w-full minimal-card bg-white dark:bg-neutral-900 p-8 border-2 border-slate-400">
+            <h3 class="text-xl font-800 mb-6 tracking-tight text-center">Nouvelle liste</h3>
+            <div class="inset-area p-1 mb-8">
+                <input type="text" id="newWheelNameInput" class="w-full bg-transparent px-5 py-4 outline-none font-semibold text-center" placeholder="Nom de la liste">
+            </div>
             <div class="flex gap-3">
-                <button onclick="closeCreateWheelModal()" class="flex-1 py-4 font-bold text-slate-400">Annuler</button>
-                <button onclick="confirmCreateWheel()" class="flex-1 py-4 bg-indigo-500 text-white rounded-2xl font-bold hover:bg-indigo-600 shadow-lg shadow-indigo-500/20">Créer</button>
+                <button onclick="closeCreateWheelModal()" class="flex-1 text-slate-500 font-bold text-xs uppercase tracking-widest">Annuler</button>
+                <button onclick="confirmCreateWheel()" class="flex-1 bg-slate-900 dark:bg-white text-white dark:text-black py-4 rounded-md font-bold text-xs uppercase tracking-widest hover:bg-black ui-element">Créer</button>
             </div>
         </div>
     </div>
 
-    <!-- Delete Confirmation Modal -->
-    <div id="confirmModal" class="hidden fixed inset-0 z-[220] flex items-center justify-center p-6 bg-slate-950/40 backdrop-blur-sm">
-        <div class="max-w-xs w-full glass dark:bg-slate-900 rounded-3xl p-6 shadow-2xl border border-white/20">
-            <h3 class="text-lg font-800 mb-2">Confirmation</h3>
-            <p id="confirmModalText" class="text-slate-500 text-sm mb-6">Voulez-vous vraiment effectuer cette action ?</p>
-            <div class="flex gap-2">
-                <button onclick="closeConfirmModal()" class="flex-1 py-3 font-bold text-slate-400 text-sm">Non</button>
-                <button id="confirmModalAction" class="flex-1 py-3 bg-red-500 text-white rounded-xl font-bold text-sm">Oui, supprimer</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Main Content -->
-    <div class="container mx-auto max-w-[1400px] p-4 lg:p-8 flex flex-col gap-6">
+    <div class="max-w-[1300px] mx-auto p-4 lg:p-12 space-y-10">
         
-        <header class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-            <div class="lg:col-span-8 glass rounded-4xl p-8 flex flex-col md:flex-row items-center gap-8 bento-card">
-                <div class="bg-gradient-to-tr from-apex-primary to-apex-accent p-6 rounded-3xl shadow-xl shadow-indigo-500/20">
-                    <i class="fas fa-bolt-lightning text-4xl text-white"></i>
-                </div>
-                <div class="text-center md:text-left">
-                    <h1 class="text-4xl lg:text-5xl font-900 tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-fuchsia-600 dark:from-indigo-400 dark:to-fuchsia-400">
-                        PickIt
-                    </h1>
-                    <p class="text-slate-500 dark:text-slate-400 mt-2 font-medium">L'outil de décision multi-roues intelligent.</p>
-                </div>
-            </div>
-
-            <div class="lg:col-span-4 glass rounded-4xl p-6 flex flex-col justify-center gap-4 bento-card">
-                <div class="flex justify-between items-center px-2">
-                    <span class="text-xs font-bold uppercase tracking-widest text-slate-400">Paramètres</span>
-                    <button onclick="toggleDarkMode()" class="text-apex-primary hover:scale-110 transition-transform">
-                        <i id="themeIcon" class="fas fa-moon text-xl"></i>
-                    </button>
-                </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <button onclick="openStartOverlay()" class="bg-white dark:bg-slate-800 p-4 rounded-2xl flex flex-col items-center gap-2 hover:bg-indigo-50 transition-colors border border-slate-100 dark:border-slate-700">
-                        <i class="fas fa-th-large text-indigo-500"></i>
-                        <span class="text-[10px] font-bold uppercase">Thèmes</span>
-                    </button>
-                    <button onclick="shareSession()" class="bg-white dark:bg-slate-800 p-4 rounded-2xl flex flex-col items-center gap-2 hover:bg-indigo-50 transition-colors border border-slate-100 dark:border-slate-700">
-                        <i class="fas fa-share-nodes text-indigo-500"></i>
-                        <span class="text-[10px] font-bold uppercase">Partager</span>
-                    </button>
-                </div>
+        <header class="flex justify-between items-center px-4">
+            <h1 class="text-2xl font-900 tracking-tighter uppercase">PickItUp<span class="text-slate-500 font-400">.</span></h1>
+            <div class="flex items-center gap-2 bg-slate-100 dark:bg-neutral-900 p-1 rounded-md border border-slate-300 dark:border-white/10">
+                <button onclick="toggleDarkMode()" class="w-9 h-9 flex items-center justify-center text-slate-500 hover:text-slate-900 dark:hover:text-white ui-element">
+                    <i id="themeIcon" class="fas fa-moon"></i>
+                </button>
+                <button onclick="toggleSound()" id="soundBtn" class="w-9 h-9 flex items-center justify-center text-slate-500 hover:text-slate-900 dark:hover:text-white ui-element">
+                    <i class="fas fa-volume-up"></i>
+                </button>
+                <button onclick="openStartOverlay()" class="ml-2 px-5 py-2 text-[10px] font-black uppercase tracking-widest bg-slate-300 dark:bg-white text-slate-900 dark:text-black rounded-sm hover:bg-slate-400 ui-element">Thèmes</button>
             </div>
         </header>
 
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <main class="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
             
-            <aside class="lg:col-span-3 space-y-6">
-                <div class="glass rounded-4xl p-6 bento-card">
+            <!-- Sidebar GAUCHE -->
+            <div class="lg:col-span-3 space-y-8 order-2 lg:order-1">
+                <div class="minimal-card p-6 bg-slate-50">
                     <div class="flex justify-between items-center mb-6">
-                        <h3 class="font-800 text-sm uppercase tracking-widest text-slate-500">Mes Roues</h3>
-                        <button onclick="openCreateWheelModal()" class="w-8 h-8 rounded-xl bg-indigo-500 text-white flex items-center justify-center hover:bg-indigo-600 transition-all hover:scale-110 shadow-lg shadow-indigo-500/20" title="Nouvelle roue">
-                            <i class="fas fa-plus text-xs"></i>
+                        <span class="text-[10px] font-black uppercase tracking-widest text-slate-400">Bibliothèque</span>
+                        <button onclick="openCreateWheelModal()" class="w-7 h-7 flex items-center justify-center bg-white dark:bg-white/5 rounded-sm border border-slate-300 dark:border-white/10 text-slate-400 hover:text-slate-900 dark:hover:text-white ui-element">
+                            <i class="fas fa-plus text-[10px]"></i>
                         </button>
                     </div>
-                    <div id="wheelTabs" class="space-y-2 max-h-64 overflow-y-auto scrollbar-hide pr-1">
-                        <!-- Tabs content here -->
-                    </div>
+                    <div id="wheelTabs" class="space-y-1.5 max-h-[250px] overflow-y-auto scrollbar-hide"></div>
                 </div>
 
-                <div class="bg-gradient-to-br from-indigo-900 to-slate-900 rounded-4xl p-6 shadow-2xl relative overflow-hidden bento-card">
-                    <div class="absolute top-0 right-0 p-4 opacity-20"><i class="fas fa-brain text-4xl text-white"></i></div>
-                    <h3 class="text-white font-800 text-sm mb-4">Générateur IA</h3>
-                    <p class="text-indigo-200 text-xs mb-4">Laissez l'IA suggérer des options pour vous.</p>
-                    <input type="text" id="aiPrompt" placeholder="Ex: 8 activités de plein air..." 
-                        class="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-indigo-400 mb-3 placeholder:text-indigo-300/50">
-                    <button id="aiBtn" onclick="generateWithAI()" class="w-full bg-white text-indigo-900 font-bold py-3 rounded-xl hover:bg-indigo-50 transition-all text-xs flex items-center justify-center gap-2">
-                        <span>GÉNÉRER</span>
-                        <i class="fas fa-wand-magic-sparkles"></i>
-                    </button>
-                    <div id="aiLoader" class="hidden mt-3 h-1 w-full rounded-full overflow-hidden">
-                        <div class="ai-loading-gradient h-full w-full"></div>
-                    </div>
-                </div>
-            </aside>
-
-            <section class="lg:col-span-6 flex flex-col items-center">
-                <div class="w-full glass rounded-5xl p-8 lg:p-12 shadow-2xl border-4 border-white dark:border-slate-800 relative">
-                    <div id="wheelContainer" class="relative w-full aspect-square max-w-[500px] mx-auto wheel-glow">
-                        <svg class="absolute top-[-20px] left-1/2 -translate-x-1/2 z-20 w-12 drop-shadow-xl" viewBox="0 0 30 40">
-                            <path d="M15 40L0 10C0 4.47715 4.47715 0 10 0H20C25.5228 0 30 4.47715 30 10L15 40Z" fill="#6366f1"/>
-                            <circle cx="15" cy="12" r="4" fill="white"/>
-                        </svg>
-                        <canvas id="wheelCanvas" width="1000" height="1000" class="w-full h-full cursor-pointer"></canvas>
-                    </div>
-
-                    <div class="mt-12 w-full max-w-sm mx-auto space-y-4">
-                        <button id="spinBtn" onclick="spinWheel()" 
-                            class="w-full py-6 bg-gradient-to-r from-indigo-600 to-fuchsia-600 hover:scale-[1.02] active:scale-95 text-white font-900 text-2xl rounded-3xl shadow-2xl shadow-indigo-500/40 transition-all disabled:opacity-50">
-                            LANCER
-                        </button>
-                        <div class="flex gap-2">
-                            <button onclick="toggleBattleRoyale()" id="battleRoyaleBtn" class="flex-1 py-3 bg-slate-100 dark:bg-slate-800 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all flex items-center justify-center gap-2">
-                                <i class="fas fa-skull text-xs"></i> Battle Royale
-                            </button>
+                <!-- Section IA Assistant -->
+                <div class="minimal-card p-8 bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-2 border-slate-800 dark:border-slate-200">
+                    <h3 class="text-xs font-bold uppercase tracking-widest mb-6 opacity-60">Assistant IA</h3>
+                    <div class="space-y-4 relative z-10">
+                        <div class="inset-area bg-white/10 dark:bg-black/5 p-3 flex items-center border border-white/10">
+                            <input type="text" id="aiPrompt" placeholder="8 destinations..." class="flex-1 bg-transparent py-1 text-xs outline-none font-medium placeholder:text-white/30 dark:placeholder:text-black/30">
                         </div>
+                        
+                        <div id="aiProgressContainer" class="hidden space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="text-[9px] font-black uppercase tracking-widest opacity-50">Génération...</span>
+                                <span id="aiProgressPercent" class="text-[9px] font-black uppercase tracking-widest">0%</span>
+                            </div>
+                            <div class="w-full h-1.5 bg-white/10 dark:bg-black/10 rounded-full overflow-hidden">
+                                <div id="aiProgressBar" class="h-full bg-white dark:bg-black transition-all duration-300" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <button onclick="generateWithAI()" id="aiBtn" class="action-btn w-full">
+                            Générer la liste
+                        </button>
                     </div>
                 </div>
-            </section>
+            </div>
 
-            <aside class="lg:col-span-3 space-y-6">
-                <div class="glass rounded-4xl p-6 bento-card">
-                    <div class="flex items-center gap-2 mb-4 group">
-                        <h3 id="currentWheelName" 
-                            class="font-800 text-sm truncate text-indigo-500 outline-none focus:ring-1 focus:ring-indigo-300 rounded px-1 transition-all" 
-                            contenteditable="true" 
-                            onblur="updateWheelName(this.textContent)"
-                            title="Cliquer pour renommer">
-                            Ma Roue
-                        </h3>
-                        <i class="fas fa-pen text-[10px] text-slate-300 opacity-0 group-hover:opacity-100"></i>
+            <!-- Centre : La Roue -->
+            <div class="lg:col-span-6 flex flex-col items-center order-1 lg:order-2">
+                <div class="w-full minimal-card p-8 lg:p-14 relative flex flex-col items-center border-2 border-slate-300 bg-white">
+                    <div id="wheelContainer" class="relative w-full aspect-square max-w-[480px] group cursor-grab active:cursor-grabbing">
+                        <div id="wheelPointer" class="absolute top-[-5px] left-1/2 -translate-x-1/2 z-20 transition-transform">
+                            <div class="w-7 h-10 bg-slate-900 dark:bg-white rounded-b flex items-center justify-center border-t-2 border-slate-900">
+                                <div class="w-1.5 h-1.5 bg-white dark:bg-black rounded-full"></div>
+                            </div>
+                        </div>
+                        <canvas id="wheelCanvas" width="1000" height="1000" class="w-full h-full"></canvas>
                     </div>
-                    <div class="relative mb-6">
-                        <input type="text" id="optionInput" 
-                            class="w-full pl-4 pr-12 py-3 bg-white dark:bg-slate-800 rounded-2xl outline-none focus:ring-2 ring-indigo-500 transition-all text-sm font-bold shadow-inner"
-                            placeholder="Ajouter...">
-                        <button onclick="addOption()" class="absolute right-2 top-2 bottom-2 aspect-square bg-indigo-500 text-white rounded-xl hover:bg-indigo-600">
+
+                    <div class="mt-12 w-full max-w-[280px]">
+                        <button id="spinBtn" onclick="spinWheel()" class="w-full py-5 bg-slate-900 dark:bg-white text-white dark:text-black font-900 text-[11px] uppercase tracking-[0.2em] rounded border-b-4 border-slate-700 dark:border-slate-300 active:border-b-0 active:translate-y-1 transition-all disabled:opacity-30">
+                            Tirer au sort
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar DROITE -->
+            <div class="lg:col-span-3 space-y-8 order-3">
+                <div class="minimal-card p-6 bg-slate-50">
+                    <!-- Titre Éditable avec Crayon -->
+                    <div class="flex items-center gap-3 mb-6 group">
+                        <div class="w-1 h-4 bg-slate-900 dark:bg-white rounded-full"></div>
+                        <h3 id="currentWheelName" 
+                            class="font-800 text-sm outline-none tracking-tight flex-1" 
+                            contenteditable="true" 
+                            onkeydown="if(event.key === 'Enter') { event.preventDefault(); this.blur(); }"
+                            onblur="updateWheelName(this.textContent)">Ma Roue</h3>
+                        <button onclick="focusWheelTitle()" class="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-slate-900 dark:hover:text-white ui-element">
+                            <i class="fas fa-pen text-[9px]"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Bouton "+" Corrigé ici -->
+                    <div class="inset-area bg-white dark:bg-black/20 p-1.5 flex items-center mb-6 border border-slate-300">
+                        <input type="text" id="optionInput" class="flex-1 bg-transparent px-3 py-3 text-[11px] font-semibold outline-none" placeholder="Ajouter un choix">
+                        <button onclick="addOption()" class="action-btn">
                             <i class="fas fa-plus"></i>
                         </button>
                     </div>
-                    <div id="optionsList" class="space-y-2 max-h-[40vh] overflow-y-auto pr-2 scrollbar-hide"></div>
+                    
+                    <div id="optionsList" class="space-y-1 max-h-[300px] overflow-y-auto scrollbar-hide pr-1"></div>
                 </div>
 
-                <div class="glass rounded-4xl p-6 bento-card text-center">
-                    <h3 class="font-800 text-xs uppercase text-slate-400 mb-4 tracking-widest">Performances</h3>
-                    <div class="space-y-4">
-                        <div class="flex justify-between items-end">
-                            <span class="text-2xl font-900" id="statDraws">0</span>
-                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Tirages</span>
-                        </div>
-                        <div class="h-1 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                            <div id="statProgress" class="h-full bg-indigo-500 transition-all duration-1000" style="width: 0%"></div>
+                <div class="minimal-card p-6 bg-slate-100/50">
+                    <div class="flex justify-between items-center mb-6">
+                        <span class="text-[9px] font-black uppercase tracking-widest text-slate-400">Statistiques</span>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] font-bold text-slate-400">Total :</span>
+                            <span class="text-xs font-900 text-slate-600 dark:text-slate-300" id="statDraws">0</span>
                         </div>
                     </div>
+                    <div id="historyStats" class="space-y-1.5 max-h-[300px] overflow-y-auto scrollbar-hide pr-1"></div>
                 </div>
-            </aside>
-        </div>
-    </div>
-
-    <!-- Toast Notification -->
-    <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 glass px-6 py-4 rounded-2xl shadow-2xl z-[300] border-2 border-indigo-500 text-sm font-bold flex items-center gap-3 dark:bg-slate-900">
-        <i class="fas fa-check-circle text-emerald-500"></i>
-        <span id="toastText">Action réussie !</span>
-    </div>
-
-    <!-- Result Winner Modal -->
-    <div id="resultModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-950/80 backdrop-blur-xl">
-        <div class="max-w-md w-full glass dark:bg-slate-900 rounded-5xl p-12 text-center border-2 border-white dark:border-slate-800 shadow-2xl relative overflow-hidden">
-            <div id="winnerIcon" class="text-8xl mb-6 animate-bounce">🏆</div>
-            <h2 class="text-indigo-500 font-bold uppercase tracking-[0.4em] text-[10px] mb-2">Le destin a parlé</h2>
-            <div id="winnerName" class="text-4xl md:text-5xl font-900 text-slate-900 dark:text-white mb-10 break-words leading-tight"></div>
-            <div class="flex flex-col gap-3">
-                <button onclick="closeModal()" class="w-full py-5 rounded-3xl bg-indigo-600 text-white font-800 hover:bg-indigo-700 shadow-xl transition-all">CONTINUER</button>
-                <button id="battleNextBtn" class="hidden w-full py-5 rounded-3xl bg-red-600 text-white font-800 hover:bg-red-700 transition-all">PROCHAINE ÉLIMINATION</button>
             </div>
+        </main>
+    </div>
+
+    <!-- Modal Résultat -->
+    <div id="resultModal" class="hidden fixed inset-0 z-[300] flex items-center justify-center p-6 bg-black/40 backdrop-blur-md">
+        <div class="max-w-md w-full text-center p-12 bg-white dark:bg-neutral-900 rounded border-2 border-slate-900 shadow-2xl">
+            <div id="winnerEmoji" class="text-6xl mb-8 animate-bounce">✨</div>
+            <span class="text-[9px] font-black uppercase tracking-[0.4em] text-slate-400 block mb-3">Le sort a désigné</span>
+            <h2 id="winnerName" class="text-5xl font-900 tracking-tighter leading-tight mb-10 uppercase">Gagnant</h2>
+            
+            <button onclick="closeModal()" class="w-full py-5 bg-slate-900 dark:bg-white text-white dark:text-black rounded font-900 uppercase tracking-widest text-[11px] hover:bg-black ui-element">
+                C'est noté !
+            </button>
         </div>
     </div>
 
     <script>
         const templates = {
-            games: { name: "Jeux Vidéo", items: ["Minecraft", "League of Legends", "Elden Ring", "Valorant", "GTA V", "FIFA", "Fortnite", "Overwatch"] },
-            food: { name: "Plats", items: ["Pizza", "Burger", "Sushi", "Tacos", "Pâtes", "Salade", "Steak", "Ramen"] },
-            movies: { name: "Films", items: ["Inception", "Interstellar", "Dark Knight", "Pulp Fiction", "Parasite", "Matrix", "Gladiator", "Shrek"] },
-            activities: { name: "Activités", items: ["Sport", "Lecture", "Gaming", "Film", "Sortir", "Cuisiner", "Dessiner", "Sieste"] }
+            games: { name: "Jeux Vidéo", items: ["Minecraft", "Elden Ring", "Fortnite", "Valorant", "Zelda", "GTA V", "FIFA", "CS:GO"] },
+            food: { name: "Plats", items: ["Pizza", "Burger", "Sushi", "Tacos", "Pâtes", "Ramen", "Steak", "Salade"] },
+            movies: { name: "Cinéma", items: ["Inception", "Interstellar", "Spider-Man", "Pulp Fiction", "Matrix", "Avengers", "Dune", "Shrek"] },
+            activities: { name: "Loisirs", items: ["Musculation", "Netflix", "Lecture", "Sieste", "Gaming", "Cuisine", "Dessin", "Sortie"] }
         };
 
-        let wheels = JSON.parse(localStorage.getItem('apex-wheels')) || [{ id: 1, name: "Ma Roue", items: [] }];
-        let currentWheelIdx = parseInt(localStorage.getItem('apex-current-wheel')) || 0;
+        let wheels = JSON.parse(localStorage.getItem('pickitup-wheels')) || [{ id: 1, name: "Ma Roue", items: [] }];
+        let currentWheelIdx = parseInt(localStorage.getItem('pickitup-current')) || 0;
         if (currentWheelIdx >= wheels.length) currentWheelIdx = 0;
 
         let isSpinning = false;
         let rotation = 0;
-        let totalDraws = parseInt(localStorage.getItem('apex-draws')) || 0;
-        let isBattleRoyale = false;
+        let angularVelocity = 0;
+        let totalDraws = parseInt(localStorage.getItem('pickitup-draws')) || 0;
+        let soundEnabled = localStorage.getItem('pickitup-sound') !== 'false';
         const apiKey = ""; 
 
         const canvas = document.getElementById('wheelCanvas');
         const ctx = canvas.getContext('2d');
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-        function init() {
-            if(localStorage.getItem('apex-dark') === 'true') document.documentElement.classList.add('dark');
-            if (wheels[currentWheelIdx].items.length === 0 && wheels.length === 1) openStartOverlay();
-            renderWheels();
-            renderUI();
+        let isDragging = false, lastMouseAngle = 0, lastTimestamp = 0;
+
+        canvas.addEventListener('mousedown', startDrag);
+        canvas.addEventListener('mousemove', handleDrag);
+        window.addEventListener('mouseup', endDrag);
+        canvas.addEventListener('touchstart', (e) => startDrag(e.touches[0]));
+        canvas.addEventListener('touchmove', (e) => { e.preventDefault(); handleDrag(e.touches[0]); }, {passive: false});
+        window.addEventListener('touchend', endDrag);
+
+        function getMouseAngle(e) {
+            const rect = canvas.getBoundingClientRect();
+            return Math.atan2(e.clientY - (rect.top + rect.height/2), e.clientX - (rect.left + rect.width/2));
+        }
+
+        function startDrag(e) {
+            if (isSpinning) return;
+            isDragging = true;
+            lastMouseAngle = getMouseAngle(e);
+            lastTimestamp = performance.now();
+            angularVelocity = 0;
+        }
+
+        function handleDrag(e) {
+            if (!isDragging) return;
+            const currentAngle = getMouseAngle(e);
+            const deltaAngle = currentAngle - lastMouseAngle;
+            rotation += deltaAngle;
+            const now = performance.now();
+            const dt = now - lastTimestamp;
+            if (dt > 0) angularVelocity = deltaAngle / dt * 16;
+            lastMouseAngle = currentAngle;
+            lastTimestamp = now;
             drawWheel();
         }
 
-        // --- Multi-Wheel Logic ---
+        function endDrag() {
+            if (!isDragging) return;
+            isDragging = false;
+            if (Math.abs(angularVelocity) > 0.1) {
+                isSpinning = true;
+                spinWithVelocity();
+            }
+        }
+
+        function spinWithVelocity() {
+            const friction = 0.99;
+            function animate() {
+                rotation += angularVelocity;
+                angularVelocity *= friction;
+                drawWheel();
+                if (Math.abs(angularVelocity) > 0.003) {
+                    requestAnimationFrame(animate);
+                } else {
+                    isSpinning = false;
+                    angularVelocity = 0;
+                    calculateWinner();
+                }
+            }
+            requestAnimationFrame(animate);
+        }
+
+        function playTick() {
+            if (!soundEnabled) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.frequency.setValueAtTime(350, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.03);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.03);
+            
+            const pointer = document.getElementById('wheelPointer');
+            pointer.classList.remove('pointer-hit');
+            void pointer.offsetWidth;
+            pointer.classList.add('pointer-hit');
+        }
+
+        function init() {
+            if(localStorage.getItem('pickitup-dark') === 'true') document.documentElement.classList.add('dark');
+            updateSoundIcon();
+            if (!wheels[currentWheelIdx].items.length && wheels.length === 1) openStartOverlay();
+            renderWheels();
+            renderUI();
+            drawWheel();
+            updateHistoryUI();
+        }
+
         function renderWheels() {
             const container = document.getElementById('wheelTabs');
             container.innerHTML = "";
             wheels.forEach((w, i) => {
                 const isActive = (i === currentWheelIdx);
-                const div = document.createElement('div');
-                div.className = `group relative w-full rounded-2xl transition-all ${isActive ? 'bg-indigo-500 text-white shadow-lg' : 'hover:bg-indigo-50 dark:hover:bg-slate-800/50'}`;
-                div.innerHTML = `
-                    <button onclick="switchWheel(${i})" class="w-full text-left px-4 py-3 font-bold text-sm truncate pr-10">${w.name}</button>
-                    ${wheels.length > 1 ? `
-                        <button onclick="handleDeleteWheel(event, ${i})" class="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center text-[10px] opacity-0 group-hover:opacity-60 hover:!opacity-100 transition-opacity">
-                            <i class="fas fa-trash-alt"></i>
-                        </button>
-                    ` : ''}
+                const btn = document.createElement('div');
+                btn.className = `group relative px-4 py-2.5 rounded text-[9px] font-black uppercase tracking-wider cursor-pointer border ui-element mb-1 ${isActive ? 'bg-slate-900 dark:bg-white text-white dark:text-black border-transparent shadow-sm scale-105' : 'text-slate-400 bg-white dark:bg-white/5 border-slate-200 dark:border-white/5 hover:border-slate-400'}`;
+                btn.innerHTML = `
+                    <div onclick="switchWheel(${i})" class="truncate pr-8 text-center w-full">${w.name}</div>
+                    ${wheels.length > 1 ? `<button onclick="deleteWheel(event, ${i})" class="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 text-[10px] text-red-500"><i class="fas fa-times"></i></button>` : ''}
                 `;
-                container.appendChild(div);
+                container.appendChild(btn);
             });
         }
 
         function switchWheel(idx) {
             if (isSpinning) return;
             currentWheelIdx = idx;
-            save();
-            renderWheels();
-            renderUI();
-            drawWheel();
+            save(); renderWheels(); renderUI(); drawWheel(); updateHistoryUI();
         }
 
-        function openCreateWheelModal() {
-            document.getElementById('createWheelModal').classList.remove('hidden');
-            document.getElementById('newWheelNameInput').focus();
-        }
-
-        function closeCreateWheelModal() {
-            document.getElementById('createWheelModal').classList.add('hidden');
-            document.getElementById('newWheelNameInput').value = "";
-        }
-
+        function openCreateWheelModal() { document.getElementById('createWheelModal').classList.remove('hidden'); document.getElementById('newWheelNameInput').focus(); }
+        function closeCreateWheelModal() { document.getElementById('createWheelModal').classList.add('hidden'); document.getElementById('newWheelNameInput').value = ""; }
         function confirmCreateWheel() {
-            const nameInput = document.getElementById('newWheelNameInput');
-            const name = nameInput.value.trim();
+            const name = document.getElementById('newWheelNameInput').value.trim();
             if (name) {
-                const newWheel = { id: Date.now(), name: name, items: [] };
-                wheels.push(newWheel);
+                wheels.push({ id: Date.now(), name, items: [] });
                 currentWheelIdx = wheels.length - 1;
-                save();
-                renderWheels();
-                renderUI();
-                drawWheel();
-                closeCreateWheelModal();
-                openStartOverlay();
+                save(); renderWheels(); renderUI(); drawWheel();
+                closeCreateWheelModal(); openStartOverlay();
             }
         }
 
-        function handleDeleteWheel(event, idx) {
-            event.stopPropagation();
-            if (wheels.length <= 1) return;
-            openConfirmModal(`Supprimer la roue "${wheels[idx].name}" ?`, () => {
-                wheels.splice(idx, 1);
-                if (currentWheelIdx >= wheels.length) currentWheelIdx = wheels.length - 1;
-                save();
-                renderWheels();
-                renderUI();
-                drawWheel();
-            });
+        function focusWheelTitle() {
+            const title = document.getElementById('currentWheelName');
+            title.focus();
+            const range = document.createRange();
+            const selection = window.getSelection();
+            range.selectNodeContents(title);
+            range.collapse(false);
+            selection.removeAllRanges();
+            selection.addRange(range);
         }
-
-        function updateWheelName(newName) {
-            const trimmed = newName.trim();
-            if (trimmed && trimmed !== wheels[currentWheelIdx].name) {
-                wheels[currentWheelIdx].name = trimmed;
-                save();
-                renderWheels();
-            } else {
-                document.getElementById('currentWheelName').textContent = wheels[currentWheelIdx].name;
-            }
-        }
-
-        // --- Custom Confirmation Modal ---
-        function openConfirmModal(text, onConfirm) {
-            const modal = document.getElementById('confirmModal');
-            const btn = document.getElementById('confirmModalAction');
-            document.getElementById('confirmModalText').textContent = text;
-            modal.classList.remove('hidden');
-            btn.onclick = () => {
-                onConfirm();
-                closeConfirmModal();
-            };
-        }
-
-        function closeConfirmModal() {
-            document.getElementById('confirmModal').classList.add('hidden');
-        }
-
-        // --- UI Feedback (Toast) ---
-        function showToast(text) {
-            const toast = document.getElementById('toast');
-            document.getElementById('toastText').textContent = text;
-            toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 3000);
-        }
-
-        // --- Core Application Logic ---
-        function openStartOverlay() { document.getElementById('startOverlay').classList.remove('hidden'); }
-        function closeStartOverlay() { document.getElementById('startOverlay').classList.add('hidden'); }
 
         function applyTemplate(id) {
             const t = templates[id];
             wheels[currentWheelIdx].name = t.name;
-            wheels[currentWheelIdx].items = t.items.map(text => ({
-                text, w: 1, c: `hsl(${Math.random() * 360}, 75%, 65%)`
-            }));
-            save();
-            renderWheels();
-            renderUI();
-            drawWheel();
-            closeStartOverlay();
+            wheels[currentWheelIdx].items = t.items.map(text => ({ text, wins: 0, c: `hsl(${Math.random() * 360}, 60%, 60%)` }));
+            save(); renderWheels(); renderUI(); drawWheel(); updateHistoryUI(); closeStartOverlay();
         }
 
         function addOption() {
             const input = document.getElementById('optionInput');
             const val = input.value.trim();
             if (val) {
-                wheels[currentWheelIdx].items.push({ text: val, w: 1, c: `hsl(${Math.random() * 360}, 75%, 65%)` });
-                input.value = "";
-                save();
-                renderUI();
-                drawWheel();
-                input.focus();
+                wheels[currentWheelIdx].items.push({ text: val, wins: 0, c: `hsl(${Math.random() * 360}, 60%, 60%)` });
+                input.value = ""; save(); renderUI(); drawWheel(); updateHistoryUI(); input.focus();
             }
         }
 
-        function removeOption(idx) {
-            wheels[currentWheelIdx].items.splice(idx, 1);
-            save();
-            renderUI();
-            drawWheel();
-        }
-
-        function updateWeight(idx, delta) {
-            const item = wheels[currentWheelIdx].items[idx];
-            item.w = Math.max(1, Math.min(10, item.w + delta));
-            save();
-            renderUI();
-            drawWheel();
-        }
+        function removeOption(idx) { wheels[currentWheelIdx].items.splice(idx, 1); save(); renderUI(); drawWheel(); updateHistoryUI(); }
 
         function renderUI() {
             const wheel = wheels[currentWheelIdx];
@@ -491,39 +430,154 @@
             list.innerHTML = "";
             wheel.items.forEach((item, i) => {
                 const div = document.createElement('div');
-                div.className = "flex items-center justify-between p-3 bg-white dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800 hover:border-indigo-500/30 transition-all";
+                div.className = "flex items-center justify-between p-3 bg-white dark:bg-white/5 rounded border border-slate-200 dark:border-white/10 ui-element mb-1 shadow-sm";
                 div.innerHTML = `
                     <div class="flex items-center gap-3 truncate">
-                        <div class="w-2 h-2 rounded-full" style="background:${item.c}"></div>
-                        <span class="text-xs font-bold truncate">${item.text}</span>
+                        <div class="w-3 h-3 rounded-sm" style="background:${item.c}"></div>
+                        <span class="text-[10px] font-bold truncate tracking-tight text-slate-600 dark:text-slate-300">${item.text}</span>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <button onclick="updateWeight(${i}, -1)" class="w-6 h-6 rounded-lg bg-slate-100 dark:bg-slate-700 text-[10px]"><i class="fas fa-minus"></i></button>
-                        <span class="text-[10px] font-black w-4 text-center">${item.w}</span>
-                        <button onclick="updateWeight(${i}, 1)" class="w-6 h-6 rounded-lg bg-slate-100 dark:bg-slate-700 text-[10px]"><i class="fas fa-plus"></i></button>
-                        <button onclick="removeOption(${i})" class="text-slate-300 hover:text-red-500 ml-2"><i class="fas fa-times"></i></button>
+                    <div class="flex items-center gap-3">
+                        ${item.wins > 0 ? `<span class="text-[8px] font-black opacity-30 tracking-tighter text-slate-400">${item.wins} W</span>` : ''}
+                        <button onclick="removeOption(${i})" class="text-slate-300 group-hover:text-red-500 transition-colors"><i class="fas fa-times-circle text-xs"></i></button>
                     </div>
                 `;
                 list.appendChild(div);
             });
             document.getElementById('statDraws').textContent = totalDraws;
-            document.getElementById('statProgress').style.width = `${Math.min(totalDraws * 5, 100)}%`;
         }
 
+        function updateWheelName(t) { if (t.trim()) { wheels[currentWheelIdx].name = t.trim(); save(); renderWheels(); } }
+
         function save() {
-            localStorage.setItem('apex-wheels', JSON.stringify(wheels));
-            localStorage.setItem('apex-draws', totalDraws);
-            localStorage.setItem('apex-current-wheel', currentWheelIdx);
+            localStorage.setItem('pickitup-wheels', JSON.stringify(wheels));
+            localStorage.setItem('pickitup-draws', totalDraws);
+            localStorage.setItem('pickitup-current', currentWheelIdx);
+        }
+
+        function drawWheel() {
+            const centerX = canvas.width / 2, centerY = canvas.height / 2, radius = canvas.width / 2 - 30;
+            const items = wheels[currentWheelIdx].items;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            if (!items.length) {
+                ctx.beginPath(); ctx.arc(centerX, centerY, radius, 0, Math.PI * 2); ctx.fillStyle = "#e5e7eb"; ctx.fill(); 
+                ctx.strokeStyle = "#d1d5db"; ctx.lineWidth = 2; ctx.stroke();
+                return;
+            }
+
+            const sliceAngle = (Math.PI * 2) / items.length;
+            const pointerAngle = Math.PI * 1.5;
+            let currentNormalized = (pointerAngle - rotation) % (Math.PI * 2);
+            if (currentNormalized < 0) currentNormalized += Math.PI * 2;
+            const currentSegIdx = Math.floor(currentNormalized / sliceAngle);
+            
+            if (currentSegIdx !== lastSegIdx && (isSpinning || isDragging)) {
+                playTick();
+                lastSegIdx = currentSegIdx;
+            }
+
+            let currentAngle = rotation;
+            items.forEach((item, i) => {
+                ctx.beginPath(); ctx.moveTo(centerX, centerY);
+                ctx.arc(centerX, centerY, radius, currentAngle, currentAngle + sliceAngle);
+                ctx.fillStyle = item.c; ctx.fill();
+                ctx.strokeStyle = "rgba(255,255,255,0.2)"; ctx.lineWidth = 4; ctx.stroke();
+                
+                ctx.save(); ctx.translate(centerX, centerY); ctx.rotate(currentAngle + sliceAngle/2);
+                ctx.textAlign = "right"; ctx.fillStyle = "white"; ctx.font = "800 38px 'Plus Jakarta Sans'";
+                ctx.fillText(item.text, radius - 45, 15); ctx.restore();
+                currentAngle += sliceAngle;
+            });
+
+            ctx.beginPath(); ctx.arc(centerX, centerY, 55, 0, Math.PI * 2); ctx.fillStyle = "white"; ctx.fill();
+            ctx.strokeStyle = "#ccc"; ctx.lineWidth = 1; ctx.stroke();
+            ctx.beginPath(); ctx.arc(centerX, centerY, 20, 0, Math.PI * 2); ctx.fillStyle = "black"; ctx.fill();
+        }
+
+        let lastSegIdx = -1;
+        function spinWheel() {
+            if (isSpinning || !wheels[currentWheelIdx].items.length) return;
+            isSpinning = true; document.getElementById('spinBtn').disabled = true;
+            angularVelocity = 0.5 + Math.random() * 0.4;
+            spinWithVelocity();
+        }
+
+        function calculateWinner() {
+            const wheel = wheels[currentWheelIdx];
+            if (!wheel.items.length) return;
+            let angle = (Math.PI * 1.5 - (rotation % (Math.PI * 2))) % (Math.PI * 2);
+            if (angle < 0) angle += Math.PI * 2;
+            let idx = Math.floor((angle / (Math.PI * 2)) * wheel.items.length);
+            idx = Math.max(0, Math.min(idx, wheel.items.length - 1));
+            const winner = wheel.items[idx];
+            winner.wins = (winner.wins || 0) + 1;
+            showWinner(winner);
+            document.getElementById('spinBtn').disabled = false;
+        }
+
+        function showWinner(item) {
+            const modal = document.getElementById('resultModal');
+            document.getElementById('winnerName').textContent = item.text;
+            modal.classList.remove('hidden');
+            totalDraws++; save(); renderUI(); updateHistoryUI();
+            confetti({ particleCount: 150, spread: 70, origin: { y: 0.7 }, colors: [item.c, '#000000'] });
+        }
+
+        function updateHistoryUI() {
+            const statsContainer = document.getElementById('historyStats');
+            const wheel = wheels[currentWheelIdx];
+            if (!wheel.items.length) { 
+                statsContainer.innerHTML = `<p class="text-[9px] text-slate-400 italic text-center py-4">Aucune donnée</p>`; 
+                return; 
+            }
+
+            const totalWins = wheel.items.reduce((acc, curr) => acc + (curr.wins || 0), 0);
+            const sortedItems = [...wheel.items].sort((a, b) => (b.wins || 0) - (a.wins || 0));
+
+            statsContainer.innerHTML = sortedItems.map(item => {
+                const winRate = totalWins > 0 ? ((item.wins || 0) / totalWins * 100).toFixed(0) : 0;
+                
+                return `
+                    <div class="bg-white dark:bg-white/5 border border-slate-300 dark:border-white/10 p-3 mb-1.5 rounded">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-[9px] font-black uppercase truncate pr-2 opacity-70">${item.text}</span>
+                            <span class="text-slate-900 dark:text-white font-black text-[10px]">${item.wins || 0} W</span>
+                        </div>
+                        <div class="flex gap-2 items-center">
+                            <div class="flex-1 bg-slate-200 dark:bg-black/20 rounded h-1 overflow-hidden">
+                                <div class="h-full bg-slate-400" style="width: ${winRate}%"></div>
+                            </div>
+                            <span class="text-[7px] font-black text-slate-400 whitespace-nowrap uppercase">${winRate}%</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
         }
 
         async function generateWithAI() {
             const promptValue = document.getElementById('aiPrompt').value;
             if (!promptValue) return;
+            
             const btn = document.getElementById('aiBtn');
-            const loader = document.getElementById('aiLoader');
-            btn.disabled = true;
-            loader.classList.remove('hidden');
-            const systemPrompt = "Tu es un assistant qui génère des listes de choix. Retourne UNIQUEMENT du JSON avec une clé 'choices' contenant un tableau de chaînes (max 12).";
+            const progContainer = document.getElementById('aiProgressContainer');
+            const progBar = document.getElementById('aiProgressBar');
+            const progPercent = document.getElementById('aiProgressPercent');
+
+            btn.classList.add('hidden');
+            progContainer.classList.remove('hidden');
+            
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                if (progress < 90) {
+                    progress += Math.random() * 15;
+                    if (progress > 90) progress = 90;
+                    progBar.style.width = `${progress}%`;
+                    progPercent.textContent = `${Math.round(progress)}%`;
+                }
+            }, 300);
+
+            const systemPrompt = "Tu es un assistant qui génère des listes de choix. Retourne UNIQUEMENT un JSON {choices: [\"nom1\", ...]} contenant 8 idées pour : " + promptValue;
+            
             try {
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
                     method: 'POST',
@@ -533,118 +587,50 @@
                         generationConfig: { responseMimeType: "application/json" }
                     })
                 });
-                const result = await response.json();
-                const data = JSON.parse(result.candidates?.[0]?.content?.parts?.[0]?.text);
+                const res = await response.json();
+                const data = JSON.parse(res.candidates[0].content.parts[0].text);
+                
                 if (data.choices) {
-                    wheels[currentWheelIdx].items = data.choices.map(c => ({ text: c, w: 1, c: `hsl(${Math.random() * 360}, 75%, 65%)` }));
-                    save(); renderUI(); drawWheel();
+                    clearInterval(progressInterval);
+                    progBar.style.width = `100%`;
+                    progPercent.textContent = `100%`;
+                    
+                    setTimeout(() => {
+                        wheels[currentWheelIdx].items = data.choices.map(c => ({ text: c, wins: 0, c: `hsl(${Math.random() * 360}, 60%, 60%)` }));
+                        save(); renderUI(); drawWheel(); updateHistoryUI();
+                        progContainer.classList.add('hidden');
+                        btn.classList.remove('hidden');
+                        progBar.style.width = `0%`;
+                    }, 500);
                 }
-            } catch (e) { showToast("Erreur lors de la génération IA"); }
-            finally { btn.disabled = false; loader.classList.add('hidden'); }
-        }
-
-        function drawWheel() {
-            const centerX = canvas.width / 2, centerY = canvas.height / 2, radius = canvas.width / 2 - 40;
-            const items = wheels[currentWheelIdx].items;
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            if (!items.length) { ctx.beginPath(); ctx.arc(centerX, centerY, radius, 0, Math.PI * 2); ctx.fillStyle = "#e2e8f0"; ctx.fill(); return; }
-            const totalW = items.reduce((a, b) => a + b.w, 0);
-            let currentAngle = rotation;
-            items.forEach(item => {
-                const sliceAngle = (item.w / totalW) * Math.PI * 2;
-                ctx.beginPath(); ctx.moveTo(centerX, centerY); ctx.arc(centerX, centerY, radius, currentAngle, currentAngle + sliceAngle); ctx.closePath();
-                ctx.fillStyle = item.c; ctx.fill(); ctx.strokeStyle = "rgba(255,255,255,0.4)"; ctx.lineWidth = 5; ctx.stroke();
-                ctx.save(); ctx.translate(centerX, centerY); ctx.rotate(currentAngle + sliceAngle / 2); ctx.textAlign = "right"; ctx.fillStyle = "white"; ctx.font = "bold 40px 'Plus Jakarta Sans'";
-                ctx.fillText(item.text.length > 15 ? item.text.substring(0, 12) + ".." : item.text, radius - 60, 15); ctx.restore();
-                currentAngle += sliceAngle;
-            });
-            ctx.beginPath(); ctx.arc(centerX, centerY, 60, 0, Math.PI * 2); ctx.fillStyle = "white"; ctx.fill();
-            ctx.beginPath(); ctx.arc(centerX, centerY, 20, 0, Math.PI * 2); ctx.fillStyle = "#6366f1"; ctx.fill();
-        }
-
-        function spinWheel() {
-            if (isSpinning || !wheels[currentWheelIdx].items.length) return;
-            isSpinning = true; document.getElementById('spinBtn').disabled = true;
-            const spinDuration = 3500 + Math.random() * 2000, startRot = rotation;
-            const targetRot = startRot + (10 + Math.random() * 10) * Math.PI * 2, start = performance.now();
-            function animate(now) {
-                const elapsed = now - start;
-                const progress = Math.min(elapsed / spinDuration, 1);
-                rotation = startRot + (targetRot - startRot) * (1 - Math.pow(1 - progress, 4));
-                drawWheel();
-                if (progress < 1) requestAnimationFrame(animate);
-                else { isSpinning = false; document.getElementById('spinBtn').disabled = false; calculateWinner(); }
-            }
-            requestAnimationFrame(animate);
-        }
-
-        function calculateWinner() {
-            const items = wheels[currentWheelIdx].items;
-            const totalW = items.reduce((a, b) => a + b.w, 0);
-            let angle = (Math.PI * 1.5 - (rotation % (Math.PI * 2))) % (Math.PI * 2);
-            if (angle < 0) angle += Math.PI * 2;
-            let cur = 0;
-            for(let i=0; i<items.length; i++) {
-                const slice = (items[i].w / totalW) * Math.PI * 2;
-                if (angle >= cur && angle < cur + slice) { showWinner(items[i], i); break; }
-                cur += slice;
-            }
-        }
-
-        function showWinner(item, idx) {
-            document.getElementById('winnerName').textContent = item.text;
-            document.getElementById('winnerName').style.color = item.c;
-            document.getElementById('resultModal').classList.remove('hidden');
-            totalDraws++; save(); renderUI();
-            confetti({ particleCount: 200, spread: 90, origin: { y: 0.7 }, colors: [item.c, '#ffffff'] });
-            if (isBattleRoyale) {
-                const btn = document.getElementById('battleNextBtn');
+            } catch(e) { 
+                clearInterval(progressInterval);
+                progContainer.classList.add('hidden');
                 btn.classList.remove('hidden');
-                btn.onclick = () => {
-                    removeOption(idx); document.getElementById('resultModal').classList.add('hidden');
-                    btn.classList.add('hidden');
-                    if (wheels[currentWheelIdx].items.length > 1) setTimeout(spinWheel, 500);
-                    else { isBattleRoyale = false; showToast("Survivant : " + wheels[currentWheelIdx].items[0].text); }
-                };
             }
-        }
-
-        function toggleBattleRoyale() {
-            if (wheels[currentWheelIdx].items.length < 2) return;
-            isBattleRoyale = !isBattleRoyale;
-            const btn = document.getElementById('battleRoyaleBtn');
-            if (isBattleRoyale) { btn.classList.add('bg-red-500', 'text-white'); spinWheel(); }
-            else { btn.classList.remove('bg-red-500', 'text-white'); }
         }
 
         function closeModal() { document.getElementById('resultModal').classList.add('hidden'); }
         function toggleDarkMode() {
-            const isDark = document.documentElement.classList.toggle('dark');
-            localStorage.setItem('apex-dark', isDark);
-            document.getElementById('themeIcon').className = isDark ? 'fas fa-sun text-yellow-400' : 'fas fa-moon text-indigo-500';
+            const d = document.documentElement.classList.toggle('dark');
+            localStorage.setItem('pickitup-dark', d);
+            document.getElementById('themeIcon').className = d ? 'fas fa-sun' : 'fas fa-moon';
+        }
+        function toggleSound() { soundEnabled = !soundEnabled; localStorage.setItem('pickitup-sound', soundEnabled); updateSoundIcon(); }
+        function updateSoundIcon() { document.getElementById('soundBtn').innerHTML = `<i class="fas ${soundEnabled ? 'fa-volume-up' : 'fa-volume-mute'}"></i>`; }
+        function openStartOverlay() { document.getElementById('startOverlay').classList.remove('hidden'); }
+        function closeStartOverlay() { document.getElementById('startOverlay').classList.add('hidden'); }
+        
+        function deleteWheel(event, idx) {
+            event.stopPropagation();
+            if (wheels.length <= 1) return;
+            wheels.splice(idx, 1);
+            if (currentWheelIdx >= wheels.length) currentWheelIdx = wheels.length - 1;
+            save(); renderWheels(); renderUI(); drawWheel(); updateHistoryUI();
         }
 
-        function shareSession() {
-            const data = btoa(JSON.stringify(wheels[currentWheelIdx].items));
-            const url = window.location.origin + window.location.pathname + '?items=' + data;
-            const dummy = document.createElement('input');
-            document.body.appendChild(dummy);
-            dummy.value = url;
-            dummy.select();
-            document.execCommand('copy');
-            document.body.removeChild(dummy);
-            showToast("Lien copié dans le presse-papier !");
-        }
-
-        // Support touche Entrée pour l'ajout d'options
-        document.getElementById('optionInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') addOption();
-        });
-
-        // Support touche Entrée pour le modal de création
-        document.getElementById('newWheelNameInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') confirmCreateWheel();
-        });
+        document.getElementById('optionInput').addEventListener('keypress', (e) => e.key === 'Enter' && addOption());
+        document.getElementById('newWheelNameInput').addEventListener('keypress', (e) => e.key === 'Enter' && confirmCreateWheel());
 
         init();
     </script>
